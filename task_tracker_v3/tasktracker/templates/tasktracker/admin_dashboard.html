@@ -1,0 +1,62 @@
+{% extends 'tasktracker/base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block n_dash %}active{% endblock %}
+{% block topbar_title %}<h2>Admin Dashboard</h2><p style="font-size:13px;color:var(--text2);margin-top:2px;">Full system overview</p>{% endblock %}
+
+{% block content %}
+<div class="punch-bar">
+  {% if attendance.punch_in and not attendance.punch_out %}
+    <div class="punch-dot in"></div>
+    <div class="punch-info"><strong>Punched In</strong><small>Since {{ attendance.punch_in|time:"g:i A" }}</small></div>
+    <form method="post" action="{% url 'punch_out' %}">{% csrf_token %}<button class="btn btn-danger btn-sm">Punch Out</button></form>
+  {% elif attendance.punch_in %}
+    <div class="punch-dot out"></div>
+    <div class="punch-info"><strong>Shift Complete ✓</strong><small>{{ attendance.hours_worked }}h worked today</small></div>
+  {% else %}
+    <div class="punch-dot out"></div>
+    <div class="punch-info"><strong>Not Punched In</strong></div>
+    <form method="post" action="{% url 'punch_in' %}">{% csrf_token %}<button class="btn btn-success btn-sm">Punch In</button></form>
+  {% endif %}
+  <a href="{% url 'create_task' %}" class="btn btn-primary btn-sm" style="margin-left:auto;">+ New Task</a>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-lbl">All Tasks</div><div class="stat-val">{{ total }}</div><div class="stat-sub">System total</div></div>
+  <div class="stat-card"><div class="stat-lbl">Pending</div><div class="stat-val" style="color:var(--yellow)">{{ pending }}</div><div class="stat-sub">Waiting</div></div>
+  <div class="stat-card"><div class="stat-lbl">In Review</div><div class="stat-val" style="color:var(--blue)">{{ in_review }}</div><div class="stat-sub">Under review</div></div>
+  <div class="stat-card"><div class="stat-lbl">Errors</div><div class="stat-val" style="color:var(--red)">{{ errors }}</div><div class="stat-sub">Need fix</div></div>
+</div>
+
+{% if error_tasks %}
+<div class="card" style="margin-bottom:16px;border-color:var(--red);">
+  <div class="sec-hd"><h3 style="color:var(--red)">⚠ Error Flagged Tasks</h3></div>
+  <div class="task-list">
+    {% for task in error_tasks %}
+    <a href="{% url 'task_detail' task.id %}" class="task-row">
+      <div class="p-bar p-{{ task.priority }}"></div>
+      <div class="task-body"><strong>{{ task.title }}</strong><small>{{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</small></div>
+      <span class="badge b-error">Error Flagged</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="sec-hd"><h3>All Tasks</h3></div>
+  <div class="task-list">
+    {% for task in tasks %}
+    <a href="{% url 'task_detail' task.id %}" class="task-row">
+      <div class="p-bar p-{{ task.priority }}"></div>
+      <div class="task-body">
+        <strong>{{ task.title }}</strong>
+        <small>{{ task.assigned_to.get_full_name|default:task.assigned_to.username }} &nbsp;·&nbsp; {{ task.created_at|date:"N j" }}</small>
+      </div>
+      <span class="badge b-{{ task.status }}">{{ task.get_status_display }}</span>
+    </a>
+    {% empty %}
+    <p style="color:var(--text3);font-size:13px;text-align:center;padding:24px 0;">No tasks yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

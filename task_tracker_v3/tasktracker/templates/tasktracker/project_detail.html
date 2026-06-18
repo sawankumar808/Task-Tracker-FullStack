@@ -1,0 +1,76 @@
+{% extends 'tasktracker/base.html' %}
+{% block title %}{{ project.name }}{% endblock %}
+{% block topbar_title %}<h2>{{ project.name }}</h2><p style="font-size:13px;color:var(--text2);">Project Overview</p>{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;margin-bottom:16px;">
+  <a href="{% url 'projects' %}" class="btn btn-outline btn-sm">← Back to Projects</a>
+  {% if profile.role in 'admin,team_leader' %}
+  <a href="{% url 'create_task' %}" class="btn btn-primary btn-sm">+ Add Task</a>
+  {% endif %}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 280px;gap:16px;">
+  <div>
+    <!-- Progress -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 style="font-size:14px;font-weight:600;">Progress</h3>
+        <span class="badge {% if project.status == 'active' %}b-approved{% elif project.status == 'completed' %}b-in_review{% else %}b-pending{% endif %}">{{ project.get_status_display }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:6px;">
+        <span>{{ project.completed_tasks }} of {{ project.total_tasks }} tasks completed</span>
+        <span style="font-weight:600;color:var(--accent);">{{ project.progress }}%</span>
+      </div>
+      <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:{{ project.progress }}%;background:var(--accent);border-radius:4px;"></div>
+      </div>
+      {% if project.description %}
+      <p style="font-size:13px;color:var(--text2);margin-top:12px;line-height:1.6;">{{ project.description }}</p>
+      {% endif %}
+    </div>
+
+    <!-- Tasks -->
+    <div class="card">
+      <div class="sec-hd"><h3>Tasks</h3></div>
+      <div class="task-list">
+        {% for task in tasks %}
+        <a href="{% url 'task_detail' task.id %}" class="task-row">
+          <div class="p-bar p-{{ task.priority }}"></div>
+          <div class="task-body">
+            <strong>{{ task.title }}</strong>
+            <small>{{ task.assigned_to.get_full_name|default:task.assigned_to.username }} &nbsp;·&nbsp; {% if task.due_date %}Due {{ task.due_date|date:"N j" }}{% else %}No deadline{% endif %}</small>
+          </div>
+          <span class="badge b-{{ task.status }}">{{ task.get_status_display }}</span>
+        </a>
+        {% empty %}
+        <p style="color:var(--text3);font-size:13px;text-align:center;padding:24px 0;">No tasks in this project yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Project Info -->
+  <div class="card" style="align-self:start;">
+    <div class="sec-hd"><h3>Details</h3></div>
+    <table>
+      <tr><td style="color:var(--text2);font-size:12px;padding:6px 0;">Created by</td><td style="font-size:12px;">{{ project.created_by.get_full_name|default:project.created_by.username }}</td></tr>
+      <tr><td style="color:var(--text2);font-size:12px;padding:6px 0;">Created</td><td style="font-size:12px;">{{ project.created_at|date:"N j, Y" }}</td></tr>
+      {% if project.due_date %}<tr><td style="color:var(--text2);font-size:12px;padding:6px 0;">Due Date</td><td style="font-size:12px;">{{ project.due_date|date:"N j, Y" }}</td></tr>{% endif %}
+    </table>
+
+    <div style="margin-top:14px;">
+      <p style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px;">Team Members</p>
+      {% for member in project.members.all %}
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+        <div class="avatar" style="width:28px;height:28px;font-size:10px;">{{ member.first_name|first|upper }}{{ member.last_name|first|upper }}</div>
+        <div>
+          <p style="font-size:12px;font-weight:500;">{{ member.get_full_name|default:member.username }}</p>
+          <p style="font-size:11px;color:var(--text2);">{{ member.profile.get_role_display }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

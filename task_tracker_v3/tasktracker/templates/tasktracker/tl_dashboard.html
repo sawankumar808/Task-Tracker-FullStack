@@ -1,0 +1,123 @@
+{% extends 'tasktracker/base.html' %}
+{% block title %}Team Leader Dashboard{% endblock %}
+{% block n_dash %}active{% endblock %}
+{% block topbar_title %}
+<h2>Team Leader Dashboard</h2>
+<p style="font-size:13px;color:var(--text2);">Manage your team & tasks</p>
+{% endblock %}
+
+{% block content %}
+<!-- Punch bar -->
+<div class="punch-bar">
+  {% if attendance.punch_in and not attendance.punch_out %}
+    <div class="punch-dot in"></div>
+    <div class="punch-info"><strong>Punched In</strong><small>Since {{ attendance.punch_in|time:"g:i A" }}</small></div>
+    <form method="post" action="{% url 'punch_out' %}">{% csrf_token %}<button class="btn btn-danger btn-sm">Punch Out</button></form>
+  {% elif attendance.punch_in %}
+    <div class="punch-dot out"></div>
+    <div class="punch-info"><strong>Shift Complete ✓</strong><small>{{ attendance.hours_worked }}h worked</small></div>
+  {% else %}
+    <div class="punch-dot out"></div>
+    <div class="punch-info"><strong>Not Punched In</strong></div>
+    <form method="post" action="{% url 'punch_in' %}">{% csrf_token %}<button class="btn btn-success btn-sm">Punch In</button></form>
+  {% endif %}
+  <a href="{% url 'create_task' %}" class="btn btn-primary btn-sm" style="margin-left:auto;">+ Assign Task</a>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-lbl">Team Tasks</div><div class="stat-val">{{ total }}</div><div class="stat-sub">Total assigned</div></div>
+  <div class="stat-card"><div class="stat-lbl">Pending</div><div class="stat-val" style="color:var(--yellow)">{{ pending }}</div><div class="stat-sub">Not submitted</div></div>
+  <div class="stat-card"><div class="stat-lbl">In Review</div><div class="stat-val" style="color:var(--blue)">{{ in_review }}</div><div class="stat-sub">Awaiting review</div></div>
+  <div class="stat-card"><div class="stat-lbl">Errors</div><div class="stat-val" style="color:var(--red)">{{ errors }}</div><div class="stat-sub">Need fix</div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 280px;gap:16px;">
+  <!-- Tasks -->
+  <div>
+    {% if error_tasks %}
+    <div class="card" style="margin-bottom:14px;border-color:var(--red);">
+      <div class="sec-hd"><h3 style="color:var(--red)">⚠ Error Flagged</h3></div>
+      <div class="task-list">
+        {% for task in error_tasks %}
+        <a href="{% url 'task_detail' task.id %}" class="task-row">
+          <div class="p-bar p-{{ task.priority }}"></div>
+          <div class="task-body"><strong>{{ task.title }}</strong><small>{{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</small></div>
+          <span class="badge b-error">Error</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="sec-hd">
+        <h3>All Team Tasks</h3>
+        <div style="display:flex;gap:6px;">
+          <a href="?status=" class="btn btn-outline btn-sm" style="font-size:11px;">All</a>
+          <a href="?status=pending" class="btn btn-outline btn-sm" style="font-size:11px;">Pending</a>
+          <a href="?status=in_review" class="btn btn-outline btn-sm" style="font-size:11px;">Review</a>
+          <a href="?status=approved" class="btn btn-outline btn-sm" style="font-size:11px;">Approved</a>
+        </div>
+      </div>
+      <div class="task-list">
+        {% for task in tasks %}
+        <a href="{% url 'task_detail' task.id %}" class="task-row">
+          <div class="p-bar p-{{ task.priority }}"></div>
+          <div class="task-body">
+            <strong>{{ task.title }}</strong>
+            <small>{{ task.assigned_to.get_full_name|default:task.assigned_to.username }} &nbsp;·&nbsp; {% if task.due_date %}Due {{ task.due_date|date:"N j" }}{% else %}No deadline{% endif %} {% if task.project %}&nbsp;·&nbsp; 📁 {{ task.project.name }}{% endif %}</small>
+          </div>
+          <span class="badge b-{{ task.status }}">{{ task.get_status_display }}</span>
+        </a>
+        {% empty %}
+        <p style="color:var(--text3);font-size:13px;text-align:center;padding:24px 0;">No tasks yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel: Team + Projects -->
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <!-- My Team -->
+    <div class="card">
+      <div class="sec-hd"><h3>My Team ({{ my_team|length }})</h3></div>
+      {% for member in my_team %}
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
+        <div class="avatar" style="width:32px;height:32px;font-size:11px;flex-shrink:0;">{{ member.user.first_name|first|upper }}{{ member.user.last_name|first|upper }}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ member.user.get_full_name|default:member.user.username }}</div>
+          <div style="font-size:11px;color:var(--text2);">
+            {{ member.user.assigned_tasks.count }} tasks
+            &nbsp;·&nbsp;
+            {% with done=member.user.assigned_tasks.all %}
+            {{ done|length }} total
+            {% endwith %}
+          </div>
+        </div>
+        <span class="badge b-in_review" style="font-size:10px;">{{ member.get_role_display }}</span>
+      </div>
+      {% empty %}
+      <p style="color:var(--text3);font-size:13px;">No team members yet.</p>
+      {% endfor %}
+    </div>
+
+    <!-- Team Attendance Today -->
+    <div class="card">
+      <div class="sec-hd"><h3>Today's Attendance</h3></div>
+      {% for att in team_attendance %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">
+        <span style="font-size:12px;">{{ att.user.get_full_name|default:att.user.username }}</span>
+        {% if att.punch_in %}
+          <span class="badge b-approved" style="font-size:10px;">{{ att.punch_in|time:"g:i A" }}</span>
+        {% else %}
+          <span class="badge b-error" style="font-size:10px;">Absent</span>
+        {% endif %}
+      </div>
+      {% empty %}
+      <p style="color:var(--text3);font-size:12px;">No attendance yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

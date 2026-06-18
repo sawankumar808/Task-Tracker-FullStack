@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign Up – Task Tracker System</title>
+<style>
+  [data-theme="light"]{--bg:#f4f5f7;--surface:#fff;--border:#e2e4e8;--text:#1a1d23;--text2:#5c6070;--text3:#9aa0af;--accent:#4f46e5;--accent-soft:#ede9fe;--red-soft:#fee2e2;--red:#dc2626;--surface2:#f8f9fa;}
+  [data-theme="dark"]{--bg:#0f1117;--surface:#1a1d2e;--border:#2e3148;--text:#e8eaf0;--text2:#8b90a8;--text3:#555a72;--accent:#6366f1;--accent-soft:#1e1b4b;--red-soft:#450a0a;--red:#ef4444;--surface2:#242736;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;transition:background .2s;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px 32px;width:100%;max-width:440px;box-shadow:0 4px 24px rgba(0,0,0,.08);}
+  .logo{display:flex;align-items:center;gap:10px;margin-bottom:22px;}
+  .logo-icon{width:38px;height:38px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;}
+  .logo-icon svg{width:22px;height:22px;color:#fff;}
+  .logo-text{font-size:15px;font-weight:700;color:var(--text);}
+  .logo-sub{font-size:11px;color:var(--text2);}
+  h1{font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px;}
+  .sub{font-size:13px;color:var(--text2);margin-bottom:22px;}
+  label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px;}
+  input,select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:var(--surface2);font-family:inherit;margin-bottom:14px;transition:border-color .15s;}
+  input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .role-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+  .role-opt{border:2px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:all .15s;text-align:center;}
+  .role-opt:hover{border-color:var(--accent);background:var(--accent-soft);}
+  .role-opt input[type=radio]{display:none;}
+  .role-opt.selected{border-color:var(--accent);background:var(--accent-soft);}
+  .role-opt .icon{font-size:20px;margin-bottom:4px;}
+  .role-opt .rname{font-size:12px;font-weight:600;color:var(--text);}
+  .role-opt .rdesc{font-size:10px;color:var(--text2);margin-top:2px;}
+  button{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s;margin-top:4px;}
+  button:hover{opacity:.9;}
+  .err{background:var(--red-soft);color:var(--red);border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:14px;}
+  .login-link{text-align:center;margin-top:16px;font-size:13px;color:var(--text2);}
+  .login-link a{color:var(--accent);text-decoration:none;font-weight:500;}
+  .theme-row{display:flex;justify-content:center;margin-top:16px;gap:8px;align-items:center;font-size:12px;color:var(--text2);}
+  .t-btn{width:36px;height:20px;border-radius:10px;background:var(--border);border:none;cursor:pointer;position:relative;}
+  .t-btn::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--surface);transition:transform .2s;}
+  [data-theme="dark"] .t-btn{background:var(--accent);}
+  [data-theme="dark"] .t-btn::after{transform:translateX(16px);}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+    <div><div class="logo-text">Task Tracker System</div><div class="logo-sub">Team Productivity Platform</div></div>
+  </div>
+  <h1>Create account</h1>
+  <p class="sub">Join your team on Task Tracker</p>
+
+  {% if messages %}{% for m in messages %}<div class="err">{{ m }}</div>{% endfor %}{% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="row">
+      <div><label>First Name</label><input type="text" name="first_name" placeholder="Rahul"></div>
+      <div><label>Last Name</label><input type="text" name="last_name" placeholder="Kumar"></div>
+    </div>
+    <label>Username *</label>
+    <input type="text" name="username" placeholder="rahul_kumar" required>
+    <label>Email</label>
+    <input type="email" name="email" placeholder="rahul@company.com">
+
+    <label>Select Your Role *</label>
+    <div class="role-grid">
+      <label class="role-opt" id="opt-employee" onclick="selectRole('employee')">
+        <input type="radio" name="role" value="employee" checked>
+        <div class="icon">👤</div>
+        <div class="rname">Employee</div>
+        <div class="rdesc">Complete tasks assigned by team lead</div>
+      </label>
+      <label class="role-opt" id="opt-team_leader" onclick="selectRole('team_leader')">
+        <input type="radio" name="role" value="team_leader">
+        <div class="icon">👥</div>
+        <div class="rname">Team Leader</div>
+        <div class="rdesc">Manage team & assign tasks</div>
+      </label>
+      <label class="role-opt" id="opt-hr" onclick="selectRole('hr')">
+        <input type="radio" name="role" value="hr">
+        <div class="icon">📊</div>
+        <div class="rname">HR</div>
+        <div class="rdesc">Attendance & reports</div>
+      </label>
+      <label class="role-opt" style="opacity:.5;cursor:not-allowed;" title="Admin role requires manual assignment">
+        <div class="icon">🔐</div>
+        <div class="rname">Admin</div>
+        <div class="rdesc">Contact system admin</div>
+      </label>
+    </div>
+
+    <label>Password *</label>
+    <input type="password" name="password" placeholder="Min 6 characters" required>
+    <label>Confirm Password *</label>
+    <input type="password" name="confirm_password" placeholder="Repeat password" required>
+    <button type="submit">Create Account →</button>
+  </form>
+
+  <div class="login-link">Already have an account? <a href="{% url 'login' %}">Sign in</a></div>
+  <div class="theme-row">
+    <span id="t-lbl">Light mode</span>
+    <button class="t-btn" onclick="toggleTheme()"></button>
+  </div>
+</div>
+<script>
+  const saved = localStorage.getItem('tts-theme')||'light';
+  document.documentElement.setAttribute('data-theme',saved);
+  document.getElementById('t-lbl').textContent = saved==='dark'?'Dark mode':'Light mode';
+
+  // Default select employee
+  document.getElementById('opt-employee').classList.add('selected');
+
+  function selectRole(role) {
+    ['employee','team_leader','hr'].forEach(r => {
+      const el = document.getElementById('opt-'+r);
+      if(el) el.classList.remove('selected');
+    });
+    const sel = document.getElementById('opt-'+role);
+    if(sel) sel.classList.add('selected');
+  }
+
+  function toggleTheme(){
+    const cur=document.documentElement.getAttribute('data-theme');
+    const next=cur==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    localStorage.setItem('tts-theme',next);
+    document.getElementById('t-lbl').textContent=next==='dark'?'Dark mode':'Light mode';
+  }
+</script>
+</body>
+</html>

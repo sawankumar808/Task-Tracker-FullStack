@@ -1,0 +1,97 @@
+{% extends 'tasktracker/base.html' %}
+{% block title %}{{ task.title }}{% endblock %}
+{% block topbar_title %}<h2>Task Detail</h2><p style="font-size:13px;color:var(--text2);">{{ task.title }}</p>{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+  <a href="{% url 'dashboard' %}" class="btn btn-outline btn-sm">← Back to Dashboard</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr {% if can_manage %}300px{% endif %};gap:16px;">
+  <!-- Task Info -->
+  <div>
+    <div class="card" style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <div class="p-bar p-{{ task.priority }}" style="min-height:44px;"></div>
+        <div style="flex:1;">
+          <h3 style="font-size:16px;font-weight:600;margin-bottom:6px;">{{ task.title }}</h3>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <span class="badge b-{{ task.status }}">{{ task.get_status_display }}</span>
+            <span style="font-size:12px;color:var(--text2);">Priority: {{ task.get_priority_display }}</span>
+            {% if task.due_date %}<span style="font-size:12px;color:var(--text2);">Due: {{ task.due_date|date:"N j, Y" }}</span>{% endif %}
+          </div>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px;">{{ task.description }}</p>
+
+      {% if task.submission_note %}
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;">
+        <p style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Submission Note</p>
+        <p style="font-size:13px;line-height:1.7;color:var(--text);">{{ task.submission_note }}</p>
+        {% if task.grammar_checked %}<p style="font-size:11px;color:var(--green);margin-top:6px;">✓ Grammar verified before submission</p>{% endif %}
+      </div>
+      {% endif %}
+
+      {% if is_owner and task.status in 'pending,error' %}
+      <div style="margin-top:16px;">
+        <a href="{% url 'submit_task' task.id %}" class="btn btn-primary btn-sm">Submit Task →</a>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if errors %}
+    <div class="card">
+      <div class="sec-hd"><h3 style="color:var(--red)">Error Reports</h3></div>
+      {% for err in errors %}
+      <div class="error-card">
+        <p>By {{ err.reported_by.get_full_name|default:err.reported_by.username }} &nbsp;·&nbsp; {{ err.created_at|date:"N j, g:i A" }}</p>
+        <span>{{ err.error_message }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  {% if can_manage %}
+  <!-- Status Update Panel -->
+  <div>
+    <div class="card" style="margin-bottom:12px;">
+      <div class="sec-hd"><h3>Update Status</h3></div>
+      <form method="post" action="{% url 'update_task_status' task.id %}">
+        {% csrf_token %}
+        <div class="form-group">
+          <label>Status</label>
+          <select name="status" class="form-ctrl" id="statusSel" onchange="toggleErrField(this.value)">
+            <option value="pending" {% if task.status == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="in_review" {% if task.status == 'in_review' %}selected{% endif %}>In Review</option>
+            <option value="approved" {% if task.status == 'approved' %}selected{% endif %}>Approved</option>
+            <option value="error" {% if task.status == 'error' %}selected{% endif %}>Error Flagged</option>
+          </select>
+        </div>
+        <div class="form-group" id="errField" style="display:{% if task.status == 'error' %}block{% else %}none{% endif %};">
+          <label>Error Description (sent to employee)</label>
+          <textarea name="error_message" class="form-ctrl" rows="3" placeholder="Describe the error clearly..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm" style="width:100%;">Update Status</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="sec-hd"><h3>Info</h3></div>
+      <table>
+        <tr><td style="color:var(--text2);font-size:12px;">Assigned to</td><td style="font-size:12px;">{{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</td></tr>
+        <tr><td style="color:var(--text2);font-size:12px;">Assigned by</td><td style="font-size:12px;">{{ task.assigned_by.get_full_name|default:task.assigned_by.username }}</td></tr>
+        <tr><td style="color:var(--text2);font-size:12px;">Created</td><td style="font-size:12px;">{{ task.created_at|date:"N j, Y" }}</td></tr>
+        <tr><td style="color:var(--text2);font-size:12px;">Updated</td><td style="font-size:12px;">{{ task.updated_at|date:"N j, g:i A" }}</td></tr>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function toggleErrField(v){
+  document.getElementById('errField').style.display = v==='error'?'block':'none';
+}
+</script>
+{% endblock %}

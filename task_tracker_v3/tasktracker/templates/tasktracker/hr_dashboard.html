@@ -1,0 +1,75 @@
+{% extends 'tasktracker/base.html' %}
+{% block title %}HR Dashboard{% endblock %}
+{% block n_dash %}active{% endblock %}
+{% block topbar_title %}<h2>HR Dashboard</h2><p style="font-size:13px;color:var(--text2);">Attendance & Reports Overview</p>{% endblock %}
+
+{% block content %}
+<!-- Punch bar -->
+<div class="punch-bar">
+  {% if attendance.punch_in and not attendance.punch_out %}
+    <div class="punch-dot in"></div>
+    <div class="punch-info"><strong>Punched In</strong><small>Since {{ attendance.punch_in|time:"g:i A" }}</small></div>
+    <form method="post" action="{% url 'punch_out' %}">{% csrf_token %}<button class="btn btn-danger btn-sm">Punch Out</button></form>
+  {% elif attendance.punch_in %}
+    <div class="punch-dot out"></div>
+    <div class="punch-info"><strong>Shift Complete ✓</strong><small>{{ attendance.hours_worked }}h</small></div>
+  {% else %}
+    <div class="punch-dot out"></div>
+    <div class="punch-info"><strong>Not Punched In</strong></div>
+    <form method="post" action="{% url 'punch_in' %}">{% csrf_token %}<button class="btn btn-success btn-sm">Punch In</button></form>
+  {% endif %}
+  <a href="{% url 'attendance_report' %}" class="btn btn-outline btn-sm" style="margin-left:auto;">Full Report →</a>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-lbl">Total Employees</div><div class="stat-val">{{ total_users }}</div><div class="stat-sub">All users</div></div>
+  <div class="stat-card"><div class="stat-lbl">Present Today</div><div class="stat-val" style="color:var(--green)">{{ present_today }}</div><div class="stat-sub">Punched in</div></div>
+  <div class="stat-card"><div class="stat-lbl">Total Tasks</div><div class="stat-val">{{ total_tasks }}</div><div class="stat-sub">System wide</div></div>
+  <div class="stat-card"><div class="stat-lbl">Approved Tasks</div><div class="stat-val" style="color:var(--green)">{{ approved_tasks }}</div><div class="stat-sub">Completed</div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+  <!-- Today Attendance -->
+  <div class="card">
+    <div class="sec-hd"><h3>Today's Attendance</h3></div>
+    <table>
+      <thead><tr><th>Employee</th><th>Role</th><th>Punch In</th><th>Punch Out</th><th>Hours</th></tr></thead>
+      <tbody>
+        {% for att in all_att %}
+        <tr>
+          <td><strong>{{ att.user.get_full_name|default:att.user.username }}</strong></td>
+          <td><span class="badge b-in_review" style="font-size:10px;">{{ att.user.profile.get_role_display }}</span></td>
+          <td>{% if att.punch_in %}<span style="color:var(--green)">{{ att.punch_in|time:"g:i A" }}</span>{% else %}<span style="color:var(--text3)">—</span>{% endif %}</td>
+          <td>{% if att.punch_out %}{{ att.punch_out|time:"g:i A" }}{% else %}<span style="color:var(--text3)">—</span>{% endif %}</td>
+          <td>{% if att.hours_worked %}<strong>{{ att.hours_worked }}h</strong>{% else %}<span style="color:var(--text3)">—</span>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px;">No records today.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Task Report by User -->
+  <div class="card">
+    <div class="sec-hd"><h3>Task Report by Employee</h3></div>
+    <table>
+      <thead><tr><th>Employee</th><th>Total</th><th>Done</th><th>Pending</th><th>Errors</th></tr></thead>
+      <tbody>
+        {% for row in task_report %}
+        <tr>
+          <td style="font-size:12px;font-weight:500;">{{ row.name }}</td>
+          <td style="font-size:12px;">{{ row.total }}</td>
+          <td style="font-size:12px;color:var(--green)"><strong>{{ row.approved }}</strong></td>
+          <td style="font-size:12px;color:var(--yellow)">{{ row.pending }}</td>
+          <td style="font-size:12px;color:var(--red)">{{ row.errors }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px;">No data.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

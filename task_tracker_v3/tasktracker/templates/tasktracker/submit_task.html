@@ -1,0 +1,171 @@
+{% extends 'tasktracker/base.html' %}
+{% block title %}Submit Task{% endblock %}
+{% block topbar_title %}<h2>Submit Task</h2><p style="font-size:13px;color:var(--text2);">Grammar check required before submitting</p>{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+  <a href="{% url 'task_detail' task.id %}" class="btn btn-outline btn-sm">← Back</a>
+</div>
+
+<!-- Task info -->
+<div class="card" style="margin-bottom:16px;">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="p-bar p-{{ task.priority }}" style="min-height:44px;"></div>
+    <div style="flex:1;">
+      <h3 style="font-size:15px;font-weight:600;">{{ task.title }}</h3>
+      <p style="font-size:12px;color:var(--text2);margin-top:3px;">{{ task.description|truncatewords:20 }}</p>
+    </div>
+    <span class="badge b-{{ task.status }}">{{ task.get_status_display }}</span>
+  </div>
+</div>
+
+<!-- Submit form -->
+<div class="card">
+  <div class="sec-hd">
+    <h3>Submission Note</h3>
+    <span style="font-size:12px;color:var(--text2);">Must pass grammar check before submitting</span>
+  </div>
+
+  <form method="post" id="submitForm">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="note">Work summary / submission note *</label>
+      <textarea name="submission_note" id="note" class="form-ctrl" rows="6"
+        placeholder="Describe what you completed, any notes for your reviewer...">{{ task.submission_note }}</textarea>
+    </div>
+
+    <!-- Grammar Check Box -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:18px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div>
+          <p style="font-size:13px;font-weight:600;">📝 Grammar Checker</p>
+          <p style="font-size:11px;color:var(--text2);margin-top:2px;">Powered by LanguageTool AI</p>
+        </div>
+        <button type="button" id="checkBtn" class="btn btn-outline btn-sm" onclick="runGrammarCheck()">
+          Check Grammar
+        </button>
+      </div>
+
+      <div id="gc-idle" style="font-size:12px;color:var(--text3);padding:8px 0;">
+        Click "Check Grammar" to analyse your note before submitting.
+      </div>
+
+      <div id="gc-loading" style="display:none;text-align:center;padding:16px 0;">
+        <div style="width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 8px;"></div>
+        <p style="font-size:12px;color:var(--text2);">Checking grammar…</p>
+      </div>
+
+      <div id="gc-pass" style="display:none;background:var(--green-soft);border:1px solid var(--green);border-radius:8px;padding:12px 14px;">
+        <p style="font-size:13px;font-weight:600;color:var(--green-text);">✓ No grammar errors found!</p>
+        <p style="font-size:12px;color:var(--green-text);opacity:.8;margin-top:3px;">You can now submit your task.</p>
+      </div>
+
+      <div id="gc-fail" style="display:none;">
+        <div style="background:var(--red-soft);border:1px solid var(--red);border-radius:8px;padding:10px 14px;margin-bottom:10px;">
+          <p style="font-size:13px;font-weight:600;color:var(--red-text);" id="gc-count"></p>
+          <p style="font-size:12px;color:var(--red-text);margin-top:2px;">Fix the issues below, then check again.</p>
+        </div>
+        <div id="gc-issues" style="max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+
+      <div id="gc-apierr" style="display:none;background:var(--yellow-soft);border:1px solid var(--yellow);border-radius:8px;padding:10px 14px;">
+        <p style="font-size:13px;color:var(--yellow-text);">⚠ Grammar service unavailable. You may submit anyway.</p>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;">
+      <a href="{% url 'task_detail' task.id %}" class="btn btn-outline">Cancel</a>
+      <button type="submit" id="submitBtn" class="btn btn-primary" disabled
+        style="opacity:.45;cursor:not-allowed;" title="Run grammar check first">
+        Submit for Review →
+      </button>
+    </div>
+  </form>
+</div>
+
+<style>
+@keyframes spin{to{transform:rotate(360deg)}}
+.grammar-issue{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+.gi-msg{font-size:12px;font-weight:600;color:var(--red-text);margin-bottom:4px;}
+.gi-ctx{font-size:11px;color:var(--text2);margin-bottom:4px;font-style:italic;}
+.gi-sug{font-size:11px;color:var(--green-text);}
+</style>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+let passed = false;
+
+function showOnly(id) {
+  ['gc-idle','gc-loading','gc-pass','gc-fail','gc-apierr'].forEach(x => {
+    document.getElementById(x).style.display = x===id ? 'block' : 'none';
+  });
+}
+function enableSubmit() {
+  const b = document.getElementById('submitBtn');
+  b.disabled=false; b.style.opacity='1'; b.style.cursor='pointer'; b.title='';
+  passed=true;
+}
+function disableSubmit() {
+  const b = document.getElementById('submitBtn');
+  b.disabled=true; b.style.opacity='.45'; b.style.cursor='not-allowed';
+  b.title='Fix grammar errors first';
+  passed=false;
+}
+
+async function runGrammarCheck() {
+  const text = document.getElementById('note').value.trim();
+  if (!text) { alert('Please write your submission note first.'); return; }
+
+  showOnly('gc-loading');
+  document.getElementById('checkBtn').disabled = true;
+  document.getElementById('checkBtn').textContent = 'Checking...';
+
+  try {
+    const res = await fetch('{% url "grammar_check" %}', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body: JSON.stringify({text})
+    });
+    const data = await res.json();
+
+    if (data.api_error && !data.matches?.length) {
+      showOnly('gc-apierr'); enableSubmit(); return;
+    }
+
+    const matches = data.matches || [];
+    if (matches.length === 0) {
+      showOnly('gc-pass'); enableSubmit();
+    } else {
+      document.getElementById('gc-count').textContent = matches.length + ' issue(s) found:';
+      const box = document.getElementById('gc-issues');
+      box.innerHTML = '';
+      matches.forEach(m => {
+        const d = document.createElement('div');
+        d.className = 'grammar-issue';
+        d.innerHTML = `
+          <div class="gi-msg">⚠ ${m.message}</div>
+          <div class="gi-ctx">Context: "…${m.context}…"</div>
+          ${m.replacements.length ? `<div class="gi-sug">💡 Suggestions: <strong>${m.replacements.join(', ')}</strong></div>` : ''}
+        `;
+        box.appendChild(d);
+      });
+      showOnly('gc-fail'); disableSubmit();
+    }
+  } catch(e) {
+    showOnly('gc-apierr'); enableSubmit();
+  }
+
+  document.getElementById('checkBtn').disabled = false;
+  document.getElementById('checkBtn').textContent = 'Check Again';
+}
+
+document.getElementById('note').addEventListener('input', () => {
+  if (passed) {
+    disableSubmit();
+    document.getElementById('gc-idle').textContent = 'Text changed — click "Check Grammar" again before submitting.';
+    showOnly('gc-idle');
+    document.getElementById('checkBtn').textContent = 'Check Grammar';
+  }
+});
+</script>
+{% endblock %}

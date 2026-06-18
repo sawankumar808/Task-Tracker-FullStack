@@ -1,0 +1,53 @@
+{% extends 'tasktracker/base.html' %}
+{% block title %}Projects{% endblock %}
+{% block topbar_title %}<h2>Projects</h2><p style="font-size:13px;color:var(--text2);">All your projects</p>{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+  {% if profile.role in 'admin,team_leader' %}
+  <a href="{% url 'create_project' %}" class="btn btn-primary">+ New Project</a>
+  {% endif %}
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+  {% for project in projects %}
+  <a href="{% url 'project_detail' project.id %}" style="text-decoration:none;color:inherit;">
+    <div class="card" style="transition:border-color .15s;cursor:pointer;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <h3 style="font-size:14px;font-weight:600;">{{ project.name }}</h3>
+        <span class="badge {% if project.status == 'active' %}b-approved{% elif project.status == 'completed' %}b-in_review{% else %}b-pending{% endif %}">
+          {{ project.get_status_display }}
+        </span>
+      </div>
+      {% if project.description %}
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5;">{{ project.description|truncatewords:15 }}</p>
+      {% endif %}
+
+      <!-- Progress bar -->
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:4px;">
+          <span>Progress</span>
+          <span>{{ project.progress }}%</span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:{{ project.progress }}%;background:var(--accent);border-radius:3px;transition:width .3s;"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);">
+        <span>{{ project.total_tasks }} tasks &nbsp;·&nbsp; {{ project.completed_tasks }} done</span>
+        {% if project.due_date %}<span>Due {{ project.due_date|date:"N j" }}</span>{% endif %}
+      </div>
+    </div>
+  </a>
+  {% empty %}
+  <div style="grid-column:1/-1;text-align:center;padding:48px 0;color:var(--text3);">
+    <p style="font-size:32px;margin-bottom:12px;">📁</p>
+    <p style="font-size:14px;">No projects yet.</p>
+    {% if profile.role in 'admin,team_leader' %}
+    <a href="{% url 'create_project' %}" class="btn btn-primary btn-sm" style="margin-top:12px;">Create First Project</a>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

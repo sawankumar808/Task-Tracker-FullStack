@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Task Tracker System{% endblock %}</title>
+  <style>
+    /* ── CSS Variables ── */
+    [data-theme="light"] {
+      --bg: #f4f5f7;
+      --surface: #ffffff;
+      --surface2: #f8f9fa;
+      --border: #e2e4e8;
+      --text: #1a1d23;
+      --text2: #5c6070;
+      --text3: #9aa0af;
+      --accent: #4f46e5;
+      --accent-soft: #ede9fe;
+      --accent-text: #3730a3;
+      --sidebar-bg: #1e2130;
+      --sidebar-text: #a8b2c8;
+      --sidebar-active: #4f46e5;
+      --sidebar-hover: rgba(255,255,255,0.06);
+      --green: #059669; --green-soft: #d1fae5; --green-text: #065f46;
+      --yellow: #d97706; --yellow-soft: #fef3c7; --yellow-text: #92400e;
+      --red: #dc2626; --red-soft: #fee2e2; --red-text: #991b1b;
+      --blue: #2563eb; --blue-soft: #dbeafe; --blue-text: #1e40af;
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.10);
+    }
+    [data-theme="dark"] {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #242736;
+      --border: #2e3148;
+      --text: #e8eaf0;
+      --text2: #8b90a8;
+      --text3: #555a72;
+      --accent: #6366f1;
+      --accent-soft: #1e1b4b;
+      --accent-text: #a5b4fc;
+      --sidebar-bg: #13151f;
+      --sidebar-text: #7880a0;
+      --sidebar-active: #6366f1;
+      --sidebar-hover: rgba(255,255,255,0.04);
+      --green: #10b981; --green-soft: #064e3b; --green-text: #6ee7b7;
+      --yellow: #f59e0b; --yellow-soft: #451a03; --yellow-text: #fcd34d;
+      --red: #ef4444; --red-soft: #450a0a; --red-text: #fca5a5;
+      --blue: #3b82f6; --blue-soft: #1e3a5f; --blue-text: #93c5fd;
+      --shadow: 0 1px 3px rgba(0,0,0,.4);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.5);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; transition: background .2s, color .2s; }
+
+    /* ── Sidebar ── */
+    .sidebar { width: 230px; background: var(--sidebar-bg); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 200; transition: background .2s; }
+    .sidebar-header { padding: 22px 20px 18px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .sidebar-header .logo { display: flex; align-items: center; gap: 10px; }
+    .sidebar-header .logo-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    .sidebar-header .logo-icon svg { width: 18px; height: 18px; color: #fff; }
+    .sidebar-header .logo-text { font-size: 14px; font-weight: 600; color: #fff; line-height: 1.2; }
+    .sidebar-header .logo-sub { font-size: 11px; color: var(--sidebar-text); }
+    .nav-section-label { font-size: 10px; color: var(--text3); padding: 16px 20px 6px; text-transform: uppercase; letter-spacing: 0.8px; }
+    .nav-link { display: flex; align-items: center; gap: 10px; padding: 9px 20px; font-size: 13px; color: var(--sidebar-text); text-decoration: none; transition: all .15s; border-left: 2px solid transparent; }
+    .nav-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .nav-link:hover { background: var(--sidebar-hover); color: #c8cedf; }
+    .nav-link.active { background: rgba(99,102,241,.15); color: #fff; border-left: 2px solid var(--sidebar-active); }
+    .sidebar-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.06); }
+    .user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0; }
+    .user-name { font-size: 13px; font-weight: 500; color: #c8cedf; }
+    .user-role { font-size: 11px; color: var(--sidebar-text); }
+    .logout-link { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--sidebar-text); text-decoration: none; padding: 6px 0; }
+    .logout-link:hover { color: var(--red); }
+
+    /* ── Main ── */
+    .main { margin-left: 230px; flex: 1; padding: 28px 32px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .topbar-left h2 { font-size: 20px; font-weight: 600; }
+    .topbar-left p { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+    /* Theme toggle */
+    .theme-toggle { display: flex; align-items: center; gap: 8px; }
+    .toggle-btn { width: 38px; height: 22px; border-radius: 11px; background: var(--border); border: none; cursor: pointer; position: relative; transition: background .2s; }
+    .toggle-btn::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); transition: transform .2s; }
+    [data-theme="dark"] .toggle-btn { background: var(--accent); }
+    [data-theme="dark"] .toggle-btn::after { transform: translateX(16px); }
+    .toggle-label { font-size: 12px; color: var(--text2); }
+
+    /* ── Cards ── */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+    .stat-lbl { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
+    .stat-val { font-size: 26px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+    .stat-sub { font-size: 11px; color: var(--text3); }
+
+    /* Punch bar */
+    .punch-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow); }
+    .punch-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .punch-dot.in { background: var(--green); box-shadow: 0 0 0 4px rgba(5,150,105,.2); animation: breathe 2s infinite; }
+    .punch-dot.out { background: var(--text3); }
+    @keyframes breathe { 0%,100%{box-shadow:0 0 0 3px rgba(5,150,105,.2)} 50%{box-shadow:0 0 0 7px rgba(5,150,105,.05)} }
+    .punch-info { flex: 1; }
+    .punch-info strong { font-size: 13px; font-weight: 600; display: block; }
+    .punch-info small { font-size: 12px; color: var(--text2); }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; text-decoration: none; transition: all .15s; white-space: nowrap; }
+    .btn svg { width: 15px; height: 15px; }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { opacity: .9; }
+    .btn-success { background: var(--green-soft); color: var(--green-text); border-color: var(--green-soft); }
+    .btn-success:hover { filter: brightness(.95); }
+    .btn-danger { background: var(--red-soft); color: var(--red-text); border-color: var(--red-soft); }
+    .btn-danger:hover { filter: brightness(.95); }
+    .btn-outline { background: transparent; color: var(--text2); border-color: var(--border); }
+    .btn-outline:hover { background: var(--surface2); color: var(--text); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    /* Badges */
+    .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; }
+    .b-pending { background: var(--yellow-soft); color: var(--yellow-text); }
+    .b-in_review { background: var(--blue-soft); color: var(--blue-text); }
+    .b-approved { background: var(--green-soft); color: var(--green-text); }
+    .b-error { background: var(--red-soft); color: var(--red-text); }
+
+    /* Priority bar */
+    .p-bar { width: 4px; border-radius: 2px; flex-shrink: 0; align-self: stretch; min-height: 36px; }
+    .p-high { background: var(--red); }
+    .p-medium { background: var(--yellow); }
+    .p-low { background: var(--green); }
+
+    /* Task list */
+    .task-list { display: flex; flex-direction: column; gap: 8px; }
+    .task-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
+    .task-row:hover { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .task-body { flex: 1; min-width: 0; }
+    .task-body strong { font-size: 13px; font-weight: 500; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .task-body small { font-size: 11px; color: var(--text2); }
+
+    /* Section title */
+    .sec-hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .sec-hd h3 { font-size: 14px; font-weight: 600; }
+
+    /* Form */
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 5px; }
+    .form-ctrl { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text); background: var(--surface2); font-family: inherit; transition: border-color .15s; }
+    .form-ctrl:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    textarea.form-ctrl { resize: vertical; min-height: 90px; }
+
+    /* Messages */
+    .msg-wrap { margin-bottom: 18px; display: flex; flex-direction: column; gap: 8px; }
+    .msg { padding: 10px 14px; border-radius: 8px; font-size: 13px; }
+    .msg.success { background: var(--green-soft); color: var(--green-text); }
+    .msg.error { background: var(--red-soft); color: var(--red-text); }
+    .msg.warning { background: var(--yellow-soft); color: var(--yellow-text); }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; font-size: 11px; color: var(--text3); font-weight: 500; padding: 8px 14px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: .5px; }
+    td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    /* Error card */
+    .error-card { background: var(--red-soft); border: 1px solid var(--red); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; }
+    .error-card p { font-size: 12px; font-weight: 600; color: var(--red-text); margin-bottom: 4px; }
+    .error-card span { font-size: 12px; color: var(--red-text); opacity: .8; }
+
+    /* Grammar result */
+    .grammar-issue { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+    .grammar-issue .gi-msg { font-size: 12px; font-weight: 600; color: var(--red-text); margin-bottom: 4px; }
+    .grammar-issue .gi-ctx { font-size: 11px; color: var(--text2); margin-bottom: 4px; font-style: italic; }
+    .grammar-issue .gi-sug { font-size: 11px; color: var(--green-text); }
+
+    @media (max-width: 960px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
+  </style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      </div>
+      <div>
+        <div class="logo-text">Task Tracker</div>
+        <div class="logo-sub">System</div>
+      </div>
+    </div>
+  </div>
+
+  <span class="nav-section-label">Main</span>
+  <a href="{% url 'dashboard' %}" class="nav-link {% block n_dash %}{% endblock %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </a>
+  <a href="{% url 'projects' %}" class="nav-link {% block n_proj %}{% endblock %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    Projects
+  </a>
+  <a href="{% url 'attendance_report' %}" class="nav-link {% block n_att %}{% endblock %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Attendance
+  </a>
+
+  {% if request.user.profile.role in 'admin,team_leader,hr' %}
+  <span class="nav-section-label">Management</span>
+  <a href="{% url 'create_task' %}" class="nav-link {% block n_create %}{% endblock %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    Assign Task
+  </a>
+  {% endif %}
+
+  <div style="flex:1;"></div>
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="avatar">{{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}</div>
+      <div>
+        <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+        <div class="user-role">{{ request.user.profile.get_role_display }}</div>
+      </div>
+    </div>
+    <a href="{% url 'logout' %}" class="logout-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign out
+    </a>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      {% block topbar_title %}<h2>Dashboard</h2>{% endblock %}
+    </div>
+    <div class="theme-toggle">
+      <span class="toggle-label" id="theme-label">Light</span>
+      <button class="toggle-btn" onclick="toggleTheme()" title="Toggle theme"></button>
+    </div>
+  </div>
+
+  {% if messages %}
+  <div class="msg-wrap">
+    {% for m in messages %}
+    <div class="msg {{ m.tags }}">{{ m }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% block content %}{% endblock %}
+</div>
+
+<script>
+  // Theme persistence
+  const saved = localStorage.getItem('tts-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  document.getElementById('theme-label').textContent = saved === 'dark' ? 'Dark' : 'Light';
+
+  function toggleTheme() {
+    const cur = document.documentElement.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('tts-theme', next);
+    document.getElementById('theme-label').textContent = next === 'dark' ? 'Dark' : 'Light';
+  }
+</script>
+
+</body>
+</html>
