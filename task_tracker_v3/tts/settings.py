@@ -7,7 +7,7 @@ SECRET_KEY = 'django-tts-change-this-in-production-xk29qla7!'
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', 'task-tracker-fullstack-production-9c2c.up.railway.app']
 
 CSRF_TRUSTED_ORIGINS = [
     'https://*.up.railway.app',
