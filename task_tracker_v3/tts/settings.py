@@ -1,5 +1,5 @@
-from pathlib import Path
 import os
+from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -7,10 +7,11 @@ SECRET_KEY = 'django-tts-change-this-in-production-xk29qla7!'
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['*', 'task-tracker-fullstack-production-9c2c.up.railway.app']
+ALLOWED_HOSTS = ['*']
 
 CSRF_TRUSTED_ORIGINS = [
     'https://*.up.railway.app',
+    'https://*.onrender.com',  # Added for Render
 ]
 
 INSTALLED_APPS = [
@@ -74,10 +75,26 @@ DATABASES = {
 }
 
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {
+        'NAME': (
+            'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'
+        )
+    },
+    {
+        'NAME': (
+            'django.contrib.auth.password_validation.MinimumLengthValidator'
+        )
+    },
+    {
+        'NAME': (
+            'django.contrib.auth.password_validation.CommonPasswordValidator'
+        )
+    },
+    {
+        'NAME': (
+            'django.contrib.auth.password_validation.NumericPasswordValidator'
+        )
+    },
 ]
 
 LANGUAGE_CODE = 'en-us'
@@ -88,7 +105,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'tasktracker' / 'static']
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
